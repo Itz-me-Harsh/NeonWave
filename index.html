@@ -6,9 +6,7 @@
 <title>NeonWave</title>
 
 <style>
-*{
-  box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 html,body{
   margin:0;
@@ -16,14 +14,14 @@ html,body{
   height:100%;
   overflow:hidden;
   background:#070914;
-  font-family:Arial,sans-serif;
+  font-family:Arial,sans-serif
 }
 
 canvas{
   display:block;
   width:100%;
   height:100%;
-  cursor:pointer;
+  cursor:pointer
 }
 
 #ui{
@@ -33,32 +31,32 @@ canvas{
   color:#fff;
   z-index:2;
   pointer-events:none;
-  text-shadow:0 2px 8px #000;
+  text-shadow:0 2px 8px #000
 }
 
 #score{
   font-size:28px;
-  font-weight:800;
+  font-weight:800
 }
 
 #coins{
   margin-top:4px;
   font-size:17px;
   color:#ffd84d;
-  font-weight:700;
+  font-weight:700
 }
 
 #shieldStatus{
   margin-top:4px;
   font-size:15px;
   color:#62eaff;
-  font-weight:700;
+  font-weight:700
 }
 
 #hint{
   margin-top:6px;
   font-size:14px;
-  opacity:.7;
+  opacity:.7
 }
 
 #gameover{
@@ -69,7 +67,7 @@ canvas{
   background:#03050faa;
   color:#fff;
   text-align:center;
-  z-index:3;
+  z-index:3
 }
 
 .panel{
@@ -77,12 +75,12 @@ canvas{
   border:1px solid #ffffff33;
   border-radius:18px;
   background:#0c1023ee;
-  box-shadow:0 0 45px #6450ff40;
+  box-shadow:0 0 45px #6450ff40
 }
 
 h1{
   margin:0 0 8px;
-  font-size:48px;
+  font-size:48px
 }
 
 button{
@@ -94,7 +92,7 @@ button{
   color:#fff;
   font-size:16px;
   font-weight:700;
-  cursor:pointer;
+  cursor:pointer
 }
 </style>
 </head>
@@ -105,17 +103,11 @@ button{
 
 <div id="ui">
 
-  <div id="score">
-    Score: 0
-  </div>
+  <div id="score">Score: 0</div>
 
-  <div id="coins">
-    🟡 Coins: 0
-  </div>
+  <div id="coins">🟡 Coins: 0</div>
 
-  <div id="shieldStatus">
-    🛡️ Shield: OFF
-  </div>
+  <div id="shieldStatus">🛡️ Shield: OFF</div>
 
   <div id="hint">
     HOLD / CLICK = RISE &nbsp; • &nbsp; RELEASE = FALL
@@ -162,7 +154,6 @@ let shields;
 let distance;
 let bonusScore;
 let coinCount;
-
 let speed;
 
 let alive;
@@ -198,11 +189,7 @@ function resize(){
   );
 }
 
-addEventListener(
-  "resize",
-  resize
-);
-
+addEventListener("resize",resize);
 resize();
 
 
@@ -229,7 +216,8 @@ function restart(){
   bonusScore=0;
   coinCount=0;
 
-  speed=5.0;
+  /* ORIGINAL STARTING SPEED */
+  speed=5.2;
 
   alive=true;
   holding=false;
@@ -254,6 +242,8 @@ function restart(){
 ========================= */
 
 function makeObstacle(x){
+
+  /* WIDER GAPS */
 
   const gap=Math.max(
     155,
@@ -418,15 +408,8 @@ function crash(){
 
     }
 
-    /*
-     * The actual pillar collision is
-     * handled by the obstacle loop.
-     * The shield simply absorbs the hit.
-     */
-
     return;
   }
-
 
   alive=false;
 
@@ -460,9 +443,7 @@ function crash(){
    TRIANGLE
 ========================= */
 
-function triangle(
-  x,y,up
-){
+function triangle(x,y,up){
 
   const s=22;
 
@@ -471,35 +452,18 @@ function triangle(
   if(up){
 
     ctx.moveTo(x,y);
-
-    ctx.lineTo(
-      x+s/2,
-      y+s
-    );
-
-    ctx.lineTo(
-      x-s/2,
-      y+s
-    );
+    ctx.lineTo(x+s/2,y+s);
+    ctx.lineTo(x-s/2,y+s);
 
   }else{
 
     ctx.moveTo(x,y);
-
-    ctx.lineTo(
-      x+s/2,
-      y-s
-    );
-
-    ctx.lineTo(
-      x-s/2,
-      y-s
-    );
+    ctx.lineTo(x+s/2,y-s);
+    ctx.lineTo(x-s/2,y-s);
 
   }
 
   ctx.closePath();
-
   ctx.fill();
 }
 
@@ -541,7 +505,6 @@ function loop(now){
     return;
   }
 
-
   const dt=Math.min(
     (now-last)/16.67,
     2
@@ -550,30 +513,34 @@ function loop(now){
   last=now;
 
 
-  /* SPEED */
+  /* =========================
+     SPEED
+  ========================= */
 
   distance+=speed*dt;
 
   speed=Math.min(
     8.5,
-    5.0+
+    5.2+
     distance/6500
   );
 
 
-  /* WAVE MOVEMENT */
+  /* =========================
+     ORIGINAL WAVE FEEL
+  ========================= */
 
   player.vy+=
     (
       holding
-      ? -0.68
-      : 0.70
+      ? -0.72
+      : 0.72
     )*dt;
 
   player.vy=Math.max(
-    -8.0,
+    -8.5,
     Math.min(
-      8.0,
+      8.5,
       player.vy
     )
   );
@@ -666,7 +633,7 @@ function loop(now){
 
 
   /* =========================
-     OBSTACLE COLLISION
+     OBSTACLES
   ========================= */
 
   for(
@@ -674,7 +641,6 @@ function loop(now){
   ){
 
     o.x-=speed*dt;
-
 
     const hit=
 
@@ -703,11 +669,6 @@ function loop(now){
 
     if(hit){
 
-      /*
-       * If shield is active, consume it
-       * and mark this pillar as passed.
-       */
-
       if(
         hasShield &&
         !o.shieldPassed
@@ -718,10 +679,6 @@ function loop(now){
         crash();
 
       }
-
-      /*
-       * Without shield, normal crash.
-       */
 
       else if(
         !hasShield &&
@@ -864,19 +821,14 @@ function loop(now){
     );
 
 
-  /* =========================
-     PARTICLES
-  ========================= */
+  /* PARTICLES */
 
   particles.forEach(
     p=>{
 
       p.x+=p.vx*dt;
-
       p.y+=p.vy*dt;
-
-      p.life-=
-        .035*dt;
+      p.life-=.035*dt;
 
     }
   );
@@ -892,9 +844,7 @@ function loop(now){
 
   draw();
 
-  requestAnimationFrame(
-    loop
-  );
+  requestAnimationFrame(loop);
 }
 
 
@@ -946,12 +896,10 @@ function draw(){
   ){
 
     ctx.beginPath();
-
     ctx.moveTo(x,0);
-
     ctx.lineTo(x,H);
-
     ctx.stroke();
+
   }
 
 
@@ -962,12 +910,10 @@ function draw(){
   ){
 
     ctx.beginPath();
-
     ctx.moveTo(0,y);
-
     ctx.lineTo(W,y);
-
     ctx.stroke();
+
   }
 
 
@@ -1007,10 +953,13 @@ function draw(){
       H-22,
       false
     );
+
   }
 
 
-  /* OBSTACLES */
+  /* =========================
+     OBSTACLES
+  ========================= */
 
   for(
     const o of obstacles
@@ -1041,7 +990,6 @@ function draw(){
       "#ff3f8e";
 
     ctx.shadowBlur=10;
-
     ctx.shadowColor=
       "#ff3f8e";
 
@@ -1070,7 +1018,9 @@ function draw(){
   }
 
 
-  /* COINS */
+  /* =========================
+     COINS
+  ========================= */
 
   for(
     const c of coins
@@ -1090,7 +1040,6 @@ function draw(){
     );
 
     ctx.shadowBlur=18;
-
     ctx.shadowColor=
       "#ffd84d";
 
@@ -1128,7 +1077,9 @@ function draw(){
   }
 
 
-  /* SHIELD POWER-UP */
+  /* =========================
+     SHIELD POWER-UP
+  ========================= */
 
   for(
     const s of shields
@@ -1146,7 +1097,6 @@ function draw(){
     );
 
     ctx.shadowBlur=25;
-
     ctx.shadowColor=
       "#55eaff";
 
@@ -1200,7 +1150,9 @@ function draw(){
   }
 
 
-  /* PARTICLES */
+  /* =========================
+     PARTICLES
+  ========================= */
 
   for(
     const p of particles
@@ -1249,12 +1201,15 @@ function draw(){
     );
 
     ctx.fill();
+
   }
 
   ctx.globalAlpha=1;
 
 
-  /* PLAYER TRAIL */
+  /* =========================
+     PLAYER TRAIL
+  ========================= */
 
   ctx.lineWidth=4;
 
@@ -1262,7 +1217,6 @@ function draw(){
     "#b9a6ff";
 
   ctx.shadowBlur=16;
-
   ctx.shadowColor=
     "#8b5cff";
 
@@ -1289,7 +1243,6 @@ function draw(){
   if(hasShield){
 
     ctx.shadowBlur=25;
-
     ctx.shadowColor=
       "#55eaff";
 
@@ -1317,7 +1270,6 @@ function draw(){
   ctx.fillStyle="#fff";
 
   ctx.shadowBlur=15;
-
   ctx.shadowColor="#fff";
 
   ctx.beginPath();
@@ -1357,9 +1309,7 @@ function draw(){
 function hold(v){
 
   if(alive){
-
     holding=v;
-
   }
 }
 
@@ -1376,8 +1326,8 @@ addEventListener(
     ){
 
       e.preventDefault();
-
       hold(true);
+
     }
 
 
@@ -1387,6 +1337,7 @@ addEventListener(
     ){
 
       restart();
+
     }
 
   }
@@ -1403,6 +1354,7 @@ addEventListener(
     ){
 
       hold(false);
+
     }
 
   }
@@ -1428,15 +1380,15 @@ addEventListener(
 canvas.ontouchstart=e=>{
 
   e.preventDefault();
-
   hold(true);
+
 };
 
 canvas.ontouchend=e=>{
 
   e.preventDefault();
-
   hold(false);
+
 };
 
 
