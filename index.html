@@ -3,84 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Neon Wave</title>
+<title>NeonWave</title>
 
 <style>
-* {
-    box-sizing: border-box;
+*{
+  box-sizing:border-box;
 }
 
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #070914;
-    font-family: Arial, sans-serif;
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#070914;
+  font-family:Arial,sans-serif;
 }
 
-canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  cursor:pointer;
 }
 
-#ui {
-    position: fixed;
-    top: 18px;
-    left: 20px;
-    color: white;
-    z-index: 2;
-    pointer-events: none;
-    text-shadow: 0 2px 8px #000;
+#ui{
+  position:fixed;
+  top:18px;
+  left:20px;
+  color:#fff;
+  z-index:2;
+  pointer-events:none;
+  text-shadow:0 2px 8px #000;
 }
 
-#score {
-    font-size: 28px;
-    font-weight: 800;
+#score{
+  font-size:28px;
+  font-weight:800;
 }
 
-#hint {
-    margin-top: 5px;
-    font-size: 14px;
-    opacity: .7;
+#coins{
+  margin-top:4px;
+  font-size:17px;
+  color:#ffd84d;
+  font-weight:700;
 }
 
-#gameover {
-    position: fixed;
-    inset: 0;
-    display: none;
-    place-items: center;
-    background: #03050faa;
-    color: white;
-    text-align: center;
-    z-index: 3;
+#shieldStatus{
+  margin-top:4px;
+  font-size:15px;
+  color:#62eaff;
+  font-weight:700;
 }
 
-.panel {
-    padding: 30px 42px;
-    border: 1px solid #ffffff33;
-    border-radius: 18px;
-    background: #0c1023ee;
-    box-shadow: 0 0 45px #6450ff40;
+#hint{
+  margin-top:6px;
+  font-size:14px;
+  opacity:.7;
 }
 
-h1 {
-    margin: 0 0 8px;
-    font-size: 48px;
+#gameover{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  background:#03050faa;
+  color:#fff;
+  text-align:center;
+  z-index:3;
 }
 
-button {
-    margin-top: 18px;
-    padding: 11px 24px;
-    border: 0;
-    border-radius: 10px;
-    background: #7c5cff;
-    color: white;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
+.panel{
+  padding:30px 42px;
+  border:1px solid #ffffff33;
+  border-radius:18px;
+  background:#0c1023ee;
+  box-shadow:0 0 45px #6450ff40;
+}
+
+h1{
+  margin:0 0 8px;
+  font-size:48px;
+}
+
+button{
+  margin-top:18px;
+  padding:11px 24px;
+  border:0;
+  border-radius:10px;
+  background:#7c5cff;
+  color:#fff;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -90,124 +104,176 @@ button {
 <canvas id="game"></canvas>
 
 <div id="ui">
-    <div id="score">0</div>
-    <div id="hint">
-        HOLD / CLICK = RISE &nbsp; • &nbsp; RELEASE = FALL
-    </div>
+
+  <div id="score">
+    Score: 0
+  </div>
+
+  <div id="coins">
+    🟡 Coins: 0
+  </div>
+
+  <div id="shieldStatus">
+    🛡️ Shield: OFF
+  </div>
+
+  <div id="hint">
+    HOLD / CLICK = RISE &nbsp; • &nbsp; RELEASE = FALL
+  </div>
+
 </div>
 
 <div id="gameover">
-    <div class="panel">
-        <h1>CRASHED</h1>
-        <div id="final"></div>
-        <button onclick="restart()">TRY AGAIN</button>
-    </div>
+
+  <div class="panel">
+
+    <h1>CRASHED</h1>
+
+    <div id="final"></div>
+
+    <button onclick="restart()">
+      TRY AGAIN
+    </button>
+
+  </div>
+
 </div>
 
 <script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-const scoreEl = document.getElementById("score");
-const over = document.getElementById("gameover");
-const finalEl = document.getElementById("final");
+const scoreEl=document.getElementById("score");
+const coinsEl=document.getElementById("coins");
+const shieldEl=document.getElementById("shieldStatus");
 
-let W, H, dpr;
+const over=document.getElementById("gameover");
+const finalEl=document.getElementById("final");
+
+let W,H,dpr;
+
 let player;
 let obstacles;
 let particles;
+let coins;
+let shields;
 
 let distance;
+let bonusScore;
+let coinCount;
+
 let speed;
+
 let alive;
 let holding;
+let hasShield;
+
 let spawnTimer;
+let coinTimer;
+let shieldTimer;
+
 let last;
 
 
 /* =========================
-   SCREEN SIZE
+   RESIZE
 ========================= */
 
-function resize() {
+function resize(){
 
-    dpr = Math.min(devicePixelRatio || 1, 2);
+  dpr=Math.min(
+    devicePixelRatio||1,
+    2
+  );
 
-    W = innerWidth;
-    H = innerHeight;
+  W=innerWidth;
+  H=innerHeight;
 
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
+  canvas.width=W*dpr;
+  canvas.height=H*dpr;
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.setTransform(
+    dpr,0,0,dpr,0,0
+  );
 }
 
-addEventListener("resize", resize);
+addEventListener(
+  "resize",
+  resize
+);
 
 resize();
 
 
 /* =========================
-   START / RESTART
+   RESTART
 ========================= */
 
-function restart() {
+function restart(){
 
-    player = {
-        x: W * 0.23,
-        y: H * 0.5,
+  player={
+    x:W*.23,
+    y:H*.5,
+    size:10,
+    vy:0,
+    trail:[]
+  };
 
-        size: 10,
+  obstacles=[];
+  particles=[];
+  coins=[];
+  shields=[];
 
-        // Vertical speed
-        vy: 0,
+  distance=0;
+  bonusScore=0;
+  coinCount=0;
 
-        // Previous positions for the neon trail
-        trail: []
-    };
+  speed=5.0;
 
-    obstacles = [];
-    particles = [];
+  alive=true;
+  holding=false;
+  hasShield=false;
 
-    distance = 0;
+  spawnTimer=0;
+  coinTimer=0;
+  shieldTimer=0;
 
-    speed = 5.2;
+  over.style.display="none";
 
-    alive = true;
-    holding = false;
+  updateUI();
 
-    spawnTimer = 0;
+  last=performance.now();
 
-    over.style.display = "none";
-
-    last = performance.now();
-
-    requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
 }
 
 
 /* =========================
-   CREATE OBSTACLE
+   OBSTACLE
 ========================= */
 
-function makeObstacle(x) {
+function makeObstacle(x){
 
-    const gap = Math.max(
-        125,
-        H * 0.23 - distance * 0.0008
-    );
+  const gap=Math.max(
+    155,
+    H*.26-distance*.0005
+  );
 
-    const center =
-        100 + Math.random() * (H - 200);
+  const center=
+    100+
+    Math.random()*
+    Math.max(80,H-200);
 
-    obstacles.push({
-        x: x,
-        gapY: center,
-        gap: gap,
-        w: 70,
-        passed: false
-    });
+  obstacles.push({
+
+    x:x,
+    gapY:center,
+    gap:gap,
+    w:70,
+    shieldPassed:false
+
+  });
 }
 
 
@@ -215,20 +281,74 @@ function makeObstacle(x) {
    PARTICLES
 ========================= */
 
-function particle(x, y) {
+function particle(
+  x,
+  y,
+  type="normal"
+){
 
-    particles.push({
-        x: x,
-        y: y,
+  particles.push({
 
-        life: 1,
+    x:x,
+    y:y,
 
-        vx: -1 - Math.random() * 2,
+    life:1,
 
-        vy: (Math.random() - 0.5) * 1.5,
+    vx:-1-Math.random()*2,
 
-        r: 2 + Math.random() * 3
-    });
+    vy:(Math.random()-.5)*1.5,
+
+    r:2+Math.random()*3,
+
+    type:type
+
+  });
+}
+
+
+/* =========================
+   COINS
+========================= */
+
+function makeCoin(){
+
+  coins.push({
+
+    x:W+40,
+
+    y:
+      80+
+      Math.random()*
+      Math.max(80,H-160),
+
+    r:10,
+
+    rotation:0
+
+  });
+}
+
+
+/* =========================
+   SHIELD
+========================= */
+
+function makeShield(){
+
+  shields.push({
+
+    x:W+40,
+
+    y:
+      100+
+      Math.random()*
+      Math.max(80,H-200),
+
+    r:15,
+
+    rotation:0
+
+  });
 }
 
 
@@ -236,88 +356,175 @@ function particle(x, y) {
    COLLISION
 ========================= */
 
-function circleRect(cx, cy, r, rx, ry, rw, rh) {
+function circleRect(
+  cx,cy,r,
+  rx,ry,rw,rh
+){
 
-    const x = Math.max(
-        rx,
-        Math.min(cx, rx + rw)
-    );
+  const x=Math.max(
+    rx,
+    Math.min(cx,rx+rw)
+  );
 
-    const y = Math.max(
-        ry,
-        Math.min(cy, ry + rh)
-    );
+  const y=Math.max(
+    ry,
+    Math.min(cy,ry+rh)
+  );
 
-    return (
-        (cx - x) ** 2 +
-        (cy - y) ** 2
-    ) < r * r;
+  return(
+    (cx-x)**2+
+    (cy-y)**2
+  )<r*r;
+}
+
+
+function circleCircle(a,b){
+
+  const dx=a.x-b.x;
+  const dy=a.y-b.y;
+
+  return Math.sqrt(
+    dx*dx+dy*dy
+  ) < a.r+b.r;
 }
 
 
 /* =========================
-   CRASH
+   CRASH / SHIELD
 ========================= */
 
-function crash() {
+function crash(){
 
-    if (!alive) return;
+  if(!alive)return;
 
-    alive = false;
+  if(hasShield){
 
-    for (let i = 0; i < 35; i++) {
-        particle(player.x, player.y);
+    hasShield=false;
+
+    shieldEl.textContent=
+      "🛡️ Shield: OFF";
+
+    for(
+      let i=0;
+      i<45;
+      i++
+    ){
+
+      particle(
+        player.x,
+        player.y,
+        "shield"
+      );
+
     }
 
-    finalEl.textContent =
-        "Score: " + Math.floor(distance / 10);
+    /*
+     * The actual pillar collision is
+     * handled by the obstacle loop.
+     * The shield simply absorbs the hit.
+     */
 
-    over.style.display = "grid";
+    return;
+  }
+
+
+  alive=false;
+
+  for(
+    let i=0;
+    i<45;
+    i++
+  ){
+
+    particle(
+      player.x,
+      player.y,
+      "crash"
+    );
+
+  }
+
+  const totalScore=
+    Math.floor(distance/10)+
+    bonusScore;
+
+  finalEl.innerHTML=
+    "Score: "+totalScore+
+    "<br>🟡 Coins: "+coinCount;
+
+  over.style.display="grid";
 }
 
 
 /* =========================
-   SPIKES
+   TRIANGLE
 ========================= */
 
-function triangle(x, y, up) {
+function triangle(
+  x,y,up
+){
 
-    const s = 22;
+  const s=22;
 
-    ctx.beginPath();
+  ctx.beginPath();
 
-    if (up) {
+  if(up){
 
-        ctx.moveTo(x, y);
+    ctx.moveTo(x,y);
 
-        ctx.lineTo(
-            x + s / 2,
-            y + s
-        );
+    ctx.lineTo(
+      x+s/2,
+      y+s
+    );
 
-        ctx.lineTo(
-            x - s / 2,
-            y + s
-        );
+    ctx.lineTo(
+      x-s/2,
+      y+s
+    );
 
-    } else {
+  }else{
 
-        ctx.moveTo(x, y);
+    ctx.moveTo(x,y);
 
-        ctx.lineTo(
-            x + s / 2,
-            y - s
-        );
+    ctx.lineTo(
+      x+s/2,
+      y-s
+    );
 
-        ctx.lineTo(
-            x - s / 2,
-            y - s
-        );
-    }
+    ctx.lineTo(
+      x-s/2,
+      y-s
+    );
 
-    ctx.closePath();
+  }
 
-    ctx.fill();
+  ctx.closePath();
+
+  ctx.fill();
+}
+
+
+/* =========================
+   UI
+========================= */
+
+function updateUI(){
+
+  scoreEl.textContent=
+    "Score: "+
+    (
+      Math.floor(distance/10)+
+      bonusScore
+    );
+
+  coinsEl.textContent=
+    "🟡 Coins: "+
+    coinCount;
+
+  shieldEl.textContent=
+    hasShield
+    ? "🛡️ Shield: ACTIVE"
+    : "🛡️ Shield: OFF";
 }
 
 
@@ -325,454 +532,821 @@ function triangle(x, y, up) {
    GAME LOOP
 ========================= */
 
-function loop(now) {
+function loop(now){
 
-    if (!alive) {
-
-        draw();
-
-        return;
-    }
-
-    const dt =
-        Math.min(
-            (now - last) / 16.67,
-            2
-        );
-
-    last = now;
-
-
-    /* =========================
-       SPEED
-    ========================= */
-
-    distance += speed * dt;
-
-    speed = Math.min(
-        10,
-        5.2 + distance / 5000
-    );
-
-
-    /* =========================
-       WAVE MOVEMENT
-    ========================= */
-
-    /*
-       HOLD  → move upward
-       RELEASE → move downward
-
-       Reduced acceleration makes
-       the wave much easier to control.
-    */
-
-    player.vy +=
-        (holding ? -0.42 : 0.42) * dt;
-
-    player.vy =
-        Math.max(
-            -5.5,
-            Math.min(5.5, player.vy)
-        );
-
-    player.y += player.vy * dt;
-
-
-    /* =========================
-       CEILING / FLOOR
-    ========================= */
-
-    if (
-        player.y < 34 ||
-        player.y > H - 34
-    ) {
-        crash();
-    }
-
-
-    /* =========================
-       TRAIL
-    ========================= */
-
-    player.trail.push({
-        x: player.x,
-        y: player.y
-    });
-
-    if (player.trail.length > 18) {
-        player.trail.shift();
-    }
-
-    if (Math.random() < 0.8) {
-        particle(
-            player.x - 7,
-            player.y
-        );
-    }
-
-
-    /* =========================
-       SPAWN OBSTACLES
-    ========================= */
-
-    spawnTimer += dt;
-
-    if (spawnTimer > 72) {
-
-        makeObstacle(W + 40);
-
-        spawnTimer = 0;
-    }
-
-
-    /* =========================
-       MOVE OBSTACLES
-    ========================= */
-
-    for (const o of obstacles) {
-
-        o.x -= speed * dt;
-
-
-        // Top wall collision
-        if (
-            circleRect(
-                player.x,
-                player.y,
-                player.size,
-
-                o.x,
-                0,
-
-                o.w,
-                o.gapY - o.gap / 2
-            )
-        ) {
-            crash();
-        }
-
-
-        // Bottom wall collision
-        if (
-            circleRect(
-                player.x,
-                player.y,
-                player.size,
-
-                o.x,
-                o.gapY + o.gap / 2,
-
-                o.w,
-                H
-            )
-        ) {
-            crash();
-        }
-    }
-
-
-    obstacles =
-        obstacles.filter(
-            o => o.x > -100
-        );
-
-
-    /* =========================
-       PARTICLE UPDATE
-    ========================= */
-
-    particles.forEach(p => {
-
-        p.x += p.vx * dt;
-
-        p.y += p.vy * dt;
-
-        p.life -= 0.035 * dt;
-    });
-
-    particles =
-        particles.filter(
-            p => p.life > 0
-        );
-
-
-    /* =========================
-       SCORE
-    ========================= */
-
-    scoreEl.textContent =
-        Math.floor(distance / 10);
-
+  if(!alive){
 
     draw();
 
-    requestAnimationFrame(loop);
+    return;
+  }
+
+
+  const dt=Math.min(
+    (now-last)/16.67,
+    2
+  );
+
+  last=now;
+
+
+  /* SPEED */
+
+  distance+=speed*dt;
+
+  speed=Math.min(
+    8.5,
+    5.0+
+    distance/6500
+  );
+
+
+  /* WAVE MOVEMENT */
+
+  player.vy+=
+    (
+      holding
+      ? -0.68
+      : 0.70
+    )*dt;
+
+  player.vy=Math.max(
+    -8.0,
+    Math.min(
+      8.0,
+      player.vy
+    )
+  );
+
+  player.y+=
+    player.vy*dt;
+
+
+  /* BORDER */
+
+  if(
+    player.y<34 ||
+    player.y>H-34
+  ){
+
+    crash();
+
+  }
+
+
+  /* TRAIL */
+
+  player.trail.push({
+
+    x:player.x,
+    y:player.y
+
+  });
+
+  if(
+    player.trail.length>18
+  ){
+
+    player.trail.shift();
+
+  }
+
+
+  if(
+    Math.random()<.8
+  ){
+
+    particle(
+      player.x-7,
+      player.y
+    );
+
+  }
+
+
+  /* OBSTACLE SPAWN */
+
+  spawnTimer+=dt;
+
+  if(spawnTimer>72){
+
+    makeObstacle(W+40);
+
+    spawnTimer=0;
+  }
+
+
+  /* COIN SPAWN */
+
+  coinTimer+=dt;
+
+  if(
+    coinTimer>105
+  ){
+
+    makeCoin();
+
+    coinTimer=0;
+  }
+
+
+  /* SHIELD SPAWN */
+
+  shieldTimer+=dt;
+
+  if(
+    shieldTimer>850 &&
+    !hasShield
+  ){
+
+    makeShield();
+
+    shieldTimer=0;
+  }
+
+
+  /* =========================
+     OBSTACLE COLLISION
+  ========================= */
+
+  for(
+    const o of obstacles
+  ){
+
+    o.x-=speed*dt;
+
+
+    const hit=
+
+      circleRect(
+        player.x,
+        player.y,
+        player.size,
+        o.x,
+        0,
+        o.w,
+        o.gapY-o.gap/2
+      )
+
+      ||
+
+      circleRect(
+        player.x,
+        player.y,
+        player.size,
+        o.x,
+        o.gapY+o.gap/2,
+        o.w,
+        H
+      );
+
+
+    if(hit){
+
+      /*
+       * If shield is active, consume it
+       * and mark this pillar as passed.
+       */
+
+      if(
+        hasShield &&
+        !o.shieldPassed
+      ){
+
+        o.shieldPassed=true;
+
+        crash();
+
+      }
+
+      /*
+       * Without shield, normal crash.
+       */
+
+      else if(
+        !hasShield &&
+        !o.shieldPassed
+      ){
+
+        crash();
+
+      }
+
+    }
+
+  }
+
+
+  obstacles=
+    obstacles.filter(
+      o=>o.x>-100
+    );
+
+
+  /* =========================
+     COINS
+  ========================= */
+
+  for(
+    const c of coins
+  ){
+
+    c.x-=speed*dt;
+
+    c.rotation+=
+      .08*dt;
+
+
+    if(
+
+      circleCircle(
+        {
+          x:player.x,
+          y:player.y,
+          r:player.size
+        },
+        c
+      )
+
+    ){
+
+      coinCount++;
+
+      bonusScore+=10;
+
+      for(
+        let i=0;
+        i<10;
+        i++
+      ){
+
+        particle(
+          c.x,
+          c.y,
+          "coin"
+        );
+
+      }
+
+      c.collected=true;
+    }
+
+  }
+
+
+  coins=
+    coins.filter(
+      c=>
+        c.x>-50 &&
+        !c.collected
+    );
+
+
+  /* =========================
+     SHIELDS
+  ========================= */
+
+  for(
+    const s of shields
+  ){
+
+    s.x-=speed*dt;
+
+    s.rotation+=
+      .05*dt;
+
+
+    if(
+
+      circleCircle(
+        {
+          x:player.x,
+          y:player.y,
+          r:player.size
+        },
+        s
+      )
+
+    ){
+
+      hasShield=true;
+
+      shieldEl.textContent=
+        "🛡️ Shield: ACTIVE";
+
+      bonusScore+=25;
+
+      for(
+        let i=0;
+        i<20;
+        i++
+      ){
+
+        particle(
+          s.x,
+          s.y,
+          "shield"
+        );
+
+      }
+
+      s.collected=true;
+    }
+
+  }
+
+
+  shields=
+    shields.filter(
+      s=>
+        s.x>-60 &&
+        !s.collected
+    );
+
+
+  /* =========================
+     PARTICLES
+  ========================= */
+
+  particles.forEach(
+    p=>{
+
+      p.x+=p.vx*dt;
+
+      p.y+=p.vy*dt;
+
+      p.life-=
+        .035*dt;
+
+    }
+  );
+
+
+  particles=
+    particles.filter(
+      p=>p.life>0
+    );
+
+
+  updateUI();
+
+  draw();
+
+  requestAnimationFrame(
+    loop
+  );
 }
 
 
 /* =========================
-   DRAW EVERYTHING
+   DRAW
 ========================= */
 
-function draw() {
+function draw(){
 
-    /* Background */
+  /* BACKGROUND */
 
-    const g =
-        ctx.createLinearGradient(
-            0,
-            0,
-            W,
-            H
-        );
-
-    g.addColorStop(
-        0,
-        "#080b22"
+  const g=
+    ctx.createLinearGradient(
+      0,0,W,H
     );
 
-    g.addColorStop(
-        1,
-        "#170720"
-    );
+  g.addColorStop(
+    0,
+    "#080b22"
+  );
 
-    ctx.fillStyle = g;
+  g.addColorStop(
+    1,
+    "#170720"
+  );
 
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
+  ctx.fillStyle=g;
 
-
-    /* Grid */
-
-    ctx.strokeStyle =
-        "#7882ff14";
-
-    ctx.lineWidth = 1;
-
-    const off =
-        distance * 0.35 % 50;
-
-    for (
-        let x = -off;
-        x < W;
-        x += 50
-    ) {
-
-        ctx.beginPath();
-
-        ctx.moveTo(x, 0);
-
-        ctx.lineTo(x, H);
-
-        ctx.stroke();
-    }
-
-    for (
-        let y = 25;
-        y < H;
-        y += 50
-    ) {
-
-        ctx.beginPath();
-
-        ctx.moveTo(0, y);
-
-        ctx.lineTo(W, y);
-
-        ctx.stroke();
-    }
+  ctx.fillRect(
+    0,0,W,H
+  );
 
 
-    /* Ceiling / Floor */
+  /* GRID */
 
-    ctx.fillStyle = "#151a3d";
+  ctx.strokeStyle=
+    "#7882ff14";
 
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        22
-    );
+  ctx.lineWidth=1;
 
-    ctx.fillRect(
-        0,
-        H - 22,
-        W,
-        22
-    );
+  const off=
+    distance*.35%50;
 
 
-    /* Ceiling / Floor spikes */
-
-    ctx.fillStyle = "#8b5cff";
-
-    for (
-        let x = 0;
-        x < W;
-        x += 22
-    ) {
-
-        triangle(
-            x + 11,
-            22,
-            true
-        );
-
-        triangle(
-            x + 11,
-            H - 22,
-            false
-        );
-    }
-
-
-    /* Obstacles */
-
-    for (const o of obstacles) {
-
-        ctx.fillStyle = "#22275a";
-
-        // Top wall
-        ctx.fillRect(
-            o.x,
-            0,
-            o.w,
-            Math.max(
-                0,
-                o.gapY - o.gap / 2
-            )
-        );
-
-        // Bottom wall
-        ctx.fillRect(
-            o.x,
-            o.gapY + o.gap / 2,
-            o.w,
-            H
-        );
-
-
-        /* Spikes */
-
-        ctx.fillStyle = "#ff3f8e";
-
-        for (
-            let x = o.x + 10;
-            x < o.x + o.w;
-            x += 22
-        ) {
-
-            triangle(
-                x,
-                o.gapY - o.gap / 2,
-                true
-            );
-
-            triangle(
-                x,
-                o.gapY + o.gap / 2,
-                false
-            );
-        }
-    }
-
-
-    /* Particles */
-
-    for (const p of particles) {
-
-        ctx.globalAlpha =
-            p.life * 0.55;
-
-        ctx.fillStyle = "#7c5cff";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            p.x,
-            p.y,
-            p.r,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-
-    ctx.globalAlpha = 1;
-
-
-    /* Player trail */
-
-    ctx.lineWidth = 4;
-
-    ctx.strokeStyle = "#b9a6ff";
-
-    ctx.shadowBlur = 16;
-
-    ctx.shadowColor = "#8b5cff";
+  for(
+    let x=-off;
+    x<W;
+    x+=50
+  ){
 
     ctx.beginPath();
 
-    player.trail.forEach(
-        (pt, i) => {
+    ctx.moveTo(x,0);
 
-            if (i) {
-
-                ctx.lineTo(
-                    pt.x,
-                    pt.y
-                );
-
-            } else {
-
-                ctx.moveTo(
-                    pt.x,
-                    pt.y
-                );
-            }
-        }
-    );
+    ctx.lineTo(x,H);
 
     ctx.stroke();
+  }
 
 
-    /* Player */
+  for(
+    let y=25;
+    y<H;
+    y+=50
+  ){
 
-    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+
+    ctx.moveTo(0,y);
+
+    ctx.lineTo(W,y);
+
+    ctx.stroke();
+  }
+
+
+  /* BORDERS */
+
+  ctx.fillStyle=
+    "#151a3d";
+
+  ctx.fillRect(
+    0,0,W,22
+  );
+
+  ctx.fillRect(
+    0,H-22,W,22
+  );
+
+
+  /* BORDER SPIKES */
+
+  ctx.fillStyle=
+    "#8b5cff";
+
+  for(
+    let x=0;
+    x<W;
+    x+=22
+  ){
+
+    triangle(
+      x+11,
+      22,
+      true
+    );
+
+    triangle(
+      x+11,
+      H-22,
+      false
+    );
+  }
+
+
+  /* OBSTACLES */
+
+  for(
+    const o of obstacles
+  ){
+
+    ctx.fillStyle=
+      "#22275a";
+
+    ctx.fillRect(
+      o.x,
+      0,
+      o.w,
+      Math.max(
+        0,
+        o.gapY-o.gap/2
+      )
+    );
+
+    ctx.fillRect(
+      o.x,
+      o.gapY+o.gap/2,
+      o.w,
+      H
+    );
+
+
+    ctx.fillStyle=
+      "#ff3f8e";
+
+    ctx.shadowBlur=10;
+
+    ctx.shadowColor=
+      "#ff3f8e";
+
+
+    for(
+      let x=o.x+10;
+      x<o.x+o.w;
+      x+=22
+    ){
+
+      triangle(
+        x,
+        o.gapY-o.gap/2,
+        true
+      );
+
+      triangle(
+        x,
+        o.gapY+o.gap/2,
+        false
+      );
+
+    }
+
+    ctx.shadowBlur=0;
+  }
+
+
+  /* COINS */
+
+  for(
+    const c of coins
+  ){
+
+    ctx.save();
+
+    ctx.translate(
+      c.x,
+      c.y
+    );
+
+    ctx.rotate(
+      Math.sin(
+        c.rotation
+      )*.25
+    );
+
+    ctx.shadowBlur=18;
+
+    ctx.shadowColor=
+      "#ffd84d";
+
+    ctx.fillStyle=
+      "#ffd84d";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      0,
+      0,
+      c.r,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle=
+      "#fff4a8";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      -3,
+      -3,
+      3,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+
+  /* SHIELD POWER-UP */
+
+  for(
+    const s of shields
+  ){
+
+    ctx.save();
+
+    ctx.translate(
+      s.x,
+      s.y
+    );
+
+    ctx.rotate(
+      s.rotation
+    );
+
+    ctx.shadowBlur=25;
+
+    ctx.shadowColor=
+      "#55eaff";
+
+    ctx.strokeStyle=
+      "#55eaff";
+
+    ctx.lineWidth=4;
 
     ctx.beginPath();
 
     ctx.moveTo(
-        player.x + 15,
-        player.y
+      0,
+      -16
     );
 
     ctx.lineTo(
-        player.x - 8,
-        player.y - 8
+      14,
+      -9
     );
 
     ctx.lineTo(
-        player.x - 3,
-        player.y
+      11,
+      9
     );
 
     ctx.lineTo(
-        player.x - 8,
-        player.y + 8
+      0,
+      17
+    );
+
+    ctx.lineTo(
+      -11,
+      9
+    );
+
+    ctx.lineTo(
+      -14,
+      -9
     );
 
     ctx.closePath();
 
+    ctx.stroke();
+
+    ctx.fillStyle=
+      "#55eaff33";
+
     ctx.fill();
 
-    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+
+  /* PARTICLES */
+
+  for(
+    const p of particles
+  ){
+
+    ctx.globalAlpha=
+      p.life*.65;
+
+
+    if(
+      p.type==="coin"
+    ){
+
+      ctx.fillStyle=
+        "#ffd84d";
+
+    }else if(
+      p.type==="shield"
+    ){
+
+      ctx.fillStyle=
+        "#55eaff";
+
+    }else if(
+      p.type==="crash"
+    ){
+
+      ctx.fillStyle=
+        "#ff3f8e";
+
+    }else{
+
+      ctx.fillStyle=
+        "#7c5cff";
+    }
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+      p.r,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+  }
+
+  ctx.globalAlpha=1;
+
+
+  /* PLAYER TRAIL */
+
+  ctx.lineWidth=4;
+
+  ctx.strokeStyle=
+    "#b9a6ff";
+
+  ctx.shadowBlur=16;
+
+  ctx.shadowColor=
+    "#8b5cff";
+
+  ctx.beginPath();
+
+  player.trail.forEach(
+    (pt,i)=>
+      i
+      ? ctx.lineTo(
+          pt.x,
+          pt.y
+        )
+      : ctx.moveTo(
+          pt.x,
+          pt.y
+        )
+  );
+
+  ctx.stroke();
+
+
+  /* ACTIVE SHIELD */
+
+  if(hasShield){
+
+    ctx.shadowBlur=25;
+
+    ctx.shadowColor=
+      "#55eaff";
+
+    ctx.strokeStyle=
+      "#55eaff";
+
+    ctx.lineWidth=3;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      player.x,
+      player.y,
+      24,
+      0,
+      Math.PI*2
+    );
+
+    ctx.stroke();
+  }
+
+
+  /* PLAYER */
+
+  ctx.fillStyle="#fff";
+
+  ctx.shadowBlur=15;
+
+  ctx.shadowColor="#fff";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    player.x+15,
+    player.y
+  );
+
+  ctx.lineTo(
+    player.x-8,
+    player.y-8
+  );
+
+  ctx.lineTo(
+    player.x-3,
+    player.y
+  );
+
+  ctx.lineTo(
+    player.x-8,
+    player.y+8
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+  ctx.shadowBlur=0;
 }
 
 
@@ -780,85 +1354,89 @@ function draw() {
    CONTROLS
 ========================= */
 
-function hold(value) {
+function hold(v){
 
-    if (alive) {
-        holding = value;
-    }
+  if(alive){
+
+    holding=v;
+
+  }
 }
 
 
-/* Keyboard */
+/* KEYBOARD */
 
 addEventListener(
-    "keydown",
-    e => {
+  "keydown",
+  e=>{
 
-        if (
-            e.code === "Space" ||
-            e.code === "ArrowUp"
-        ) {
+    if(
+      e.code==="Space" ||
+      e.code==="ArrowUp"
+    ){
 
-            e.preventDefault();
+      e.preventDefault();
 
-            hold(true);
-        }
-
-
-        if (
-            e.code === "KeyR" &&
-            !alive
-        ) {
-
-            restart();
-        }
+      hold(true);
     }
+
+
+    if(
+      e.code==="KeyR" &&
+      !alive
+    ){
+
+      restart();
+    }
+
+  }
 );
 
 
 addEventListener(
-    "keyup",
-    e => {
+  "keyup",
+  e=>{
 
-        if (
-            e.code === "Space" ||
-            e.code === "ArrowUp"
-        ) {
+    if(
+      e.code==="Space" ||
+      e.code==="ArrowUp"
+    ){
 
-            hold(false);
-        }
+      hold(false);
     }
+
+  }
 );
 
 
-/* Mouse */
+/* MOUSE */
 
-canvas.onmousedown = () => {
-    hold(true);
+canvas.onmousedown=()=>{
+  hold(true);
 };
 
 addEventListener(
-    "mouseup",
-    () => {
-        hold(false);
-    }
-);
-
-
-/* Touch */
-
-canvas.ontouchstart = e => {
-
-    e.preventDefault();
-
-    hold(true);
-};
-
-canvas.ontouchend = e => {
-
-    e.preventDefault();
-
+  "mouseup",
+  ()=>{
     hold(false);
+  }
+);
+
+
+/* TOUCH */
+
+canvas.ontouchstart=e=>{
+
+  e.preventDefault();
+
+  hold(true);
+};
+
+canvas.ontouchend=e=>{
+
+  e.preventDefault();
+
+  hold(false);
 };
 
 
